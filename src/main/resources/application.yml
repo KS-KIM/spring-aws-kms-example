@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: aws-kms-example
+
+aws:
+  kms:
+    encryption:
+      endpoint: "http://localhost:4566"
+      accountId: "000000000000"
+      accessKey: "root"
+      secretKey: "root"
+      keyId: "arn:aws:kms:ap-northeast-2:000000000000:alias/kms-example"
+      region: "ap-northeast-2"
+      maxEntryAge: 300000
+      maxEntryUses: 100
+      maxCacheEntries: 100
