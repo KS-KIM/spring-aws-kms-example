@@ -1,0 +1,23 @@
+services:
+    localstack-kms:
+        image: localstack/localstack:latest
+        container_name: localstack
+        ports:
+            - "4566:4566" # LocalStack Gateway (Default Port)
+            - "4574:4574" # KMS
+        environment:
+            - SERVICES=kms
+            - EDGE_PORT=4566
+            - AWS_ACCESS_KEY_ID=root
+            - AWS_SECRET_ACCESS_KEY=root
+            - AWS_DEFAULT_REGION=ap-northeast-2
+            - DEBUG=1
+        volumes:
+            - "./localstack-data:/var/lib/localstack" # Persist LocalStack data
+            - "/var/run/docker.sock:/var/run/docker.sock" # Required for some advanced features
+        networks:
+            - aws-kms-example
+
+networks:
+    aws-kms-example:
+        driver: bridge
