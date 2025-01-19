@@ -1,0 +1,36 @@
+[versions]
+
+kotlin = "2.0.10"
+springBoot = "3.3.4"
+springDependencyManagement = "1.1.0"
+detekt = "1.23.7"
+aws-sdk = "2.30.2"
+aws-sdk-encryption = "3.0.1"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependencyManagement = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+[libraries]
+# kotlin
+jvm = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin" }
+reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+
+# detekt
+detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
+
+# spring web
+spring-boot-web = { group = "org.springframework.boot", name = "spring-boot-starter-web" }
+spring-boot-configProcessor = { group = "org.springframework.boot", name = "spring-boot-configuration-processor" }
+
+# jackson (object mapping)
+jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
+
+# aws sdk
+aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "aws-sdk" }
+aws-sdk-encryption = { module = "com.amazonaws:aws-encryption-sdk-java", version.ref = "aws-sdk-encryption" }
