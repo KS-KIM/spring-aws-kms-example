@@ -29,17 +29,24 @@ $ ./init_localstack.sh
 
 ### 어플리케이션 빌드
 
+어플리케이션을 빌드한다. java 21.0.5를 사용한다. sdkman을 사용하여 프로젝트에 맞는 자바 버전을 설정할 수 있다.
+
 ```shell
 $ ./gradlew build
 ```
 
 ### 실행
 
-```shell
+어플리케이션을 실행한다.
 
+```shell
+$  java -jar build/libs/aws-kms-example-0.0.1-SNAPSHOT.jar
 ```
+
+### 테스트
+
+[테스트 파일](./http/kms-test.http)을 이용하여 API 호출을 테스트한다.
 
 ## 참고
 
 - [data key caching](https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/data-key-caching.html)
-- TODO: AWS KMS Hierarchical keyrings 방식 적용

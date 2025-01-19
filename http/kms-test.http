@@ -1,0 +1,39 @@
+### 암호화 테스트
+POST http://localhost:8080/encryption/encrypt
+Content-Type: application/json
+
+{
+  "data": "HelloWorld##@@!!"
+}
+
+> {%
+    client.test("암호화 요청 성공", function () {
+        client.assert(response.status === 200, "응답 상태가 200이 아닙니다.");
+    });
+
+    client.test("암호화 데이터가 응답에 포함됨", function () {
+        client.assert(response.body.hasOwnProperty("result"), "응답에 'result' 필드가 없습니다.");
+    });
+
+    client.global.set("encrypted_data", response.body.result); // 암호화된 데이터 저장
+%}
+
+### 복호화 테스트
+POST http://localhost:8080/encryption/decrypt
+Content-Type: application/json
+
+{
+  "data": "{{encrypted_data}}"
+}
+
+> {%
+    client.test("복호화 요청 성공", function () {
+        client.assert(response.status === 200, "응답 상태가 200이 아닙니다.");
+    });
+
+    client.test("복호화 데이터 검증", function () {
+        const decryptedData = response.body.result;
+
+        client.assert(decryptedData === "HelloWorld##@@!!", `복호화 결과가 일치하지 않습니다. 기대값: 'HelloWorld##@@!!', 실제값: '${decryptedData}'`);
+    });
+%}
