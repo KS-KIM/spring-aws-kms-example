@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.jackson)
 
     implementation(libs.aws.sdk.bom)
+    implementation(libs.aws.sdk.dynamodb)
     implementation(libs.aws.sdk.encryption)
 
     annotationProcessor(libs.spring.boot.configProcessor)

@@ -32,5 +32,6 @@ spring-boot-configProcessor = { group = "org.springframework.boot", name = "spri
 jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
 
 # aws sdk
-aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "aws-sdk" }
-aws-sdk-encryption = { module = "com.amazonaws:aws-encryption-sdk-java", version.ref = "aws-sdk-encryption" }
+aws-sdk-bom = { group = "software.amazon.awssdk", name = "bom", version.ref = "aws-sdk" }
+aws-sdk-dynamodb = { group = "software.amazon.awssdk", name = "dynamodb", version.ref = "aws-sdk" }
+aws-sdk-encryption = { group = "com.amazonaws", name = "aws-encryption-sdk-java", version.ref = "aws-sdk-encryption" }
