@@ -11,7 +11,7 @@ class EncryptService(
     private val encryptPort: EncryptPort,
 ) : EncryptUseCase {
     override fun encrypt(command: EncryptCommand): EncryptResponse {
-        val encryptedData = encryptPort.encrypt(command.data)
+        val encryptedData = encryptPort.encrypt(command.data, command.context)
         return EncryptResponse(encryptedData)
     }
 }

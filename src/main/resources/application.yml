@@ -1,16 +1,50 @@
 spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
   application:
     name: aws-kms-example
-
+  profiles:
+    active: local
+    group:
+      local: common, local
+      alpha: common, alpha
+      develop: common, develop
+      staging: common, staging
+      production: common, production
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+logging:
+  level:
+    io.kskim.awskmsexample.encryption.filter.RequestResponseLoggingFilter: INFO
+---
+spring:
+  profiles:
+    active: local
 aws:
-  kms:
-    encryption:
-      endpoint: "http://localhost:4566"
-      accountId: "000000000000"
-      accessKey: "root"
-      secretKey: "root"
-      keyId: "arn:aws:kms:ap-northeast-2:000000000000:alias/kms-example"
+  encryption:
+    # kms configuration
+    kms:
       region: "ap-northeast-2"
-      maxEntryAge: 300000
-      maxEntryUses: 100
-      maxCacheEntries: 100
+      accessKeyId: "root"
+      secretAccessKey: "root"
+      endpoint: "http://localhost:4574"
+      # keyArn은 alias 입력이 불가능하다.
+      keyArn: ${KMS_ARN}
+    # dynamodb keystore configuration
+    keystore:
+      region: "ap-northeast-2"
+      accessKeyId: "root"
+      secretAccessKey: "root"
+      endpoint: "http://localhost:4566"
+      tableName: "kms-key-store"
+      logicalName: "kms-key-store"
+    # keyring configuration
+    keyring:
+      cacheTTLSeconds: 6000
+      cacheEntryCapacity: 100
+      branchKeyId: "branch-key-id"
+logging:
+  level:
+    io.kskim.awskmsexample.encryption.filter.RequestResponseLoggingFilter: DEBUG

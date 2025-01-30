@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class RestEncryptionAdapter(
     private val encryptUseCase: EncryptUseCase,
-    private val decryptUseCase: DecryptUseCase
+    private val decryptUseCase: DecryptUseCase,
 ) {
     @PostMapping("/encrypt")
     fun encrypt(
         @RequestBody request: RestEncryptRequest
     ): ResponseEntity<RestEncryptResponse> {
-        val encryptedData = encryptUseCase.encrypt(EncryptCommand(request.data))
+        val encryptedData = encryptUseCase.encrypt(EncryptCommand(request.data, request.context))
         return ResponseEntity.ok(RestEncryptResponse(encryptedData.encryptedData))
     }
 
@@ -28,7 +28,7 @@ class RestEncryptionAdapter(
     fun decrypt(
         @RequestBody request: RestDecryptRequest
     ): ResponseEntity<RestDecryptResponse> {
-        val decryptedData = decryptUseCase.decrypt(DecryptCommand(request.data))
+        val decryptedData = decryptUseCase.decrypt(DecryptCommand(request.data, request.context))
         return ResponseEntity.ok(RestDecryptResponse(decryptedData.decryptedData))
     }
 }

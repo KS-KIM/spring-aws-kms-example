@@ -20,11 +20,11 @@ $ docker-compose up -d
 
 ### KMS 키 생성
 
-키 생성을 위한 스크립트가 이미 준비되어 있다.
+키 생성을 위한 스크립트가 이미 준비되어 있다. 졍상적으로 수행되지 않는 경우 `docker compose down` 하여 인스턴스 제거 후 재시도한다.
 
 ```shell
-$ chmod +x init_localstack.sh
-$ ./init_localstack.sh
+$ chmod +x init.sh
+$ ./init.sh
 ```
 
 ### 어플리케이션 빌드
@@ -40,7 +40,7 @@ $ ./gradlew build
 어플리케이션을 실행한다.
 
 ```shell
-$  java -jar build/libs/aws-kms-example-0.0.1-SNAPSHOT.jar
+$ java -jar build/libs/aws-kms-example-0.0.1-SNAPSHOT.jar
 ```
 
 ### 테스트

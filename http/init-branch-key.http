@@ -1,0 +1,15 @@
+### branch key 생성
+POST http://localhost:8080/encryption/branch-keys
+Content-Type: application/json
+
+{
+  "branchKeyId": "branch-key-id"
+}
+
+> {%
+    client.test("branch key 생성 성공", function () {
+        client.assert(response.status === 200, "응답 상태가 200이 아닙니다.");
+    });
+
+    client.global.set("encrypted_data", response.body.result); // 암호화된 데이터 저장
+%}
