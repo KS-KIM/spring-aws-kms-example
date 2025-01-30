@@ -46,7 +46,7 @@ $ java -jar build/libs/aws-kms-example-0.0.1-SNAPSHOT.jar
 
 ### 테스트
 
-[테스트 파일](./http/kms-test.http)을 이용하여 API 호출을 테스트한다.
+[키 생성/로테이션 테스트](./http/branch-key-test.http), [암호화/복호화 테스트](./http/encryption-test.http)를 이용하여 API 호출을 테스트한다.
 
 ## 참고
 
