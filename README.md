@@ -9,9 +9,10 @@ AWS KMS 대칭키 암호화 예제
 
 본 예제를 사용하기 위해 AWS CLI가 로컬에 설치되어 있어야 한다.
 
-### LocalStack 실행
+### docker compose 실행
 
-로컬에서 AWS KMS 서비스를 대체하기 위해 LocalStack을 사용한다.
+DynamoDB를 로컬에서 시뮬레이션 하기 위해 Localstack을 사용한다.
+KMS는 Localstack에서 reencrypt 함수를 지원하지 않으므로 local-kms 도커 이미지를 사용한다.
 프로젝트 루트에서 아래 명령어를 입력하여 도커 이미지를 실행 가능하다.
 
 ```shell
