@@ -1,0 +1,29 @@
+### branch key 생성
+@branchKeyId = {{$uuid}}
+
+POST http://localhost:8080/encryption/branch-keys
+Content-Type: application/json
+
+{
+  "branchKeyId": "{{branchKeyId}}"
+}
+
+> {%
+    client.test("branch key 생성 성공", function () {
+        client.assert(response.status === 204, "응답 상태가 204가 아닙니다.");
+    });
+%}
+
+### branch key rotate
+POST http://localhost:8080/encryption/branch-keys/rotate
+Content-Type: application/json
+
+{
+  "branchKeyId": "{{branchKeyId}}"
+}
+
+> {%
+    client.test("branch key rotate 성공", function () {
+        client.assert(response.status === 204, "응답 상태가 204가 아닙니다.");
+    });
+%}

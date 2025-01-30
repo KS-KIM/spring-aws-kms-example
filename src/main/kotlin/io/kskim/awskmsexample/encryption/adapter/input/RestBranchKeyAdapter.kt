@@ -24,7 +24,7 @@ class RestBranchKeyAdapter(
     fun createBranchKey(
         @RequestBody request: RestCreateBranchKeyRequest
     ): ResponseEntity<Void> {
-        val command = CreateBranchKeyCommand(request.branchKeyId, request.context)
+        val command = CreateBranchKeyCommand(request.branchKeyId)
         createBranchKeyUseCase.createBranchKey(command)
         return ResponseEntity.noContent().build()
     }

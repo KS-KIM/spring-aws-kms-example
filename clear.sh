@@ -1,11 +1,6 @@
 #!/bin/bash
 
-# 모든 KMS 키와 DynamoDB 테이블 삭제 함수
-clean_up_resources() {
-  local endpoint=""
-  local region=""
-
-  # 전달된 인자를 파싱
+clean_up_kms_resources() {
   while [[ $# -gt 0 ]]; do
     case $1 in
       --endpoint)
@@ -17,13 +12,11 @@ clean_up_resources() {
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to clean_up_resources: $1"
+        echo "Unknown parameter passed to clean_up_resources: $1\n"
         exit 1
         ;;
     esac
   done
-
-  echo "Starting cleanup process..."
 
   # 모든 KMS 키 삭제
   echo "Listing all KMS keys..."
@@ -45,10 +38,31 @@ clean_up_resources() {
       --pending-window-in-days 7
 
     if [ $? -eq 0 ]; then
-      echo "Scheduled deletion for KMS key: $key_id"
+      echo "Scheduled deletion for KMS key: $key_id\n"
     else
-      echo "Failed to schedule deletion for KMS key: $key_id"
+      echo "Failed to schedule deletion for KMS key: $key_id\n"
     fi
+  done
+
+  echo "Cleanup KMS keys completed.\n"
+}
+
+clean_up_dynamo_db_resources() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --endpoint)
+        endpoint="$2"
+        shift 2
+        ;;
+      --region)
+        region="$2"
+        shift 2
+        ;;
+      *)
+        echo "Unknown parameter passed to clean_up_resources: $1\n"
+        exit 1
+        ;;
+    esac
   done
 
   # 모든 DynamoDB 테이블 삭제
@@ -75,17 +89,26 @@ clean_up_resources() {
     fi
   done
 
-  echo "Cleanup process completed."
+  echo "Cleanup DynamoDB tables completed.\n"
 }
 
 # 메인 함수
 main() {
-  local aws_endpoint="http://localhost:4566"
+  local aws_dynamodb_endpoint="http://localhost:4566"
+  local aws_kms_endpoint="http://localhost:4574"
   local aws_region="ap-northeast-2"
 
-  clean_up_resources \
-    --endpoint "$aws_endpoint" \
+  echo "Starting cleanup process...\n"
+
+  clean_up_kms_resources \
+    --endpoint "$aws_kms_endpoint" \
     --region "$aws_region"
+
+  clean_up_dynamo_db_resources \
+    --endpoint "$aws_dynamodb_endpoint" \
+    --region "$aws_region"
+
+  echo "Cleanup process completed."
 }
 
 # 스크립트 실행

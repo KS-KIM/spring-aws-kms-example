@@ -1,9 +1,12 @@
-### 암호화 테스트
+### 암호화 성공
 POST http://localhost:8080/encryption/encrypt
 Content-Type: application/json
 
 {
-  "data": "HelloWorld##@@!!"
+  "data": "HelloWorld##@@!!",
+  "context": {
+    "purpose": "PASSWORD_ENCRYPTION"
+  }
 }
 
 > {%
@@ -18,12 +21,15 @@ Content-Type: application/json
     client.global.set("encrypted_data", response.body.result); // 암호화된 데이터 저장
 %}
 
-### 복호화 테스트
+### 복호화 성공
 POST http://localhost:8080/encryption/decrypt
 Content-Type: application/json
 
 {
-  "data": "{{encrypted_data}}"
+  "data": "{{encrypted_data}}",
+  "context": {
+    "purpose": "PASSWORD_ENCRYPTION"
+  }
 }
 
 > {%
@@ -35,5 +41,22 @@ Content-Type: application/json
         const decryptedData = response.body.result;
 
         client.assert(decryptedData === "HelloWorld##@@!!", `복호화 결과가 일치하지 않습니다. 기대값: 'HelloWorld##@@!!', 실제값: '${decryptedData}'`);
+    });
+%}
+
+### 복호화 실패
+POST http://localhost:8080/encryption/decrypt
+Content-Type: application/json
+
+{
+  "data": "{{encrypted_data}}",
+  "context": {
+    "purpose": "REGISTRATION_ID_ENCRYPTION"
+  }
+}
+
+> {%
+    client.test("복호화 요청 실패", function () {
+        client.assert(response.status === 500, "응답 상태가 500이 아닙니다.");
     });
 %}

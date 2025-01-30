@@ -23,11 +23,11 @@ class AwsKmsAdapter(
     @Value("\${spring.profiles.active:default}")
     private lateinit var environment: String
 
-    override fun createBranchKey(branchKeyId: String, context: EncryptionContext): String {
+    override fun createBranchKey(branchKeyId: String): String {
         val result = keystore.CreateKey(
             CreateKeyInput.builder()
                 .branchKeyIdentifier(branchKeyId)
-                .encryptionContext(convertEncryptionContext(context))
+                .encryptionContext(mapOf("environment" to environment))
                 .build()
         )
         return result.branchKeyIdentifier()

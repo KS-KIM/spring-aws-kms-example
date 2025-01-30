@@ -75,7 +75,7 @@ class RequestResponseLoggingFilter(private val objectMapper: ObjectMapper) : Onc
 
         return try {
             objectMapper.readTree(bodyString).toPrettyString() // JSON이면 예쁘게 출력
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             bodyString // JSON이 아니면 그대로 출력
         }
     }

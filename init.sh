@@ -1,9 +1,13 @@
 #!/bin/bash
 
-# KMS 키가 이미 존재하는지 확인하는 함수
-check_kms_key_exists() {
+# KMS 키 복원 함수 (Pending Deletion 상태일 경우)
+restore_pending_kms_key() {
   while [[ $# -gt 0 ]]; do
     case $1 in
+      --key-id)
+        key_id="$2"
+        shift 2
+        ;;
       --endpoint)
         endpoint="$2"
         shift 2
@@ -12,30 +16,43 @@ check_kms_key_exists() {
         region="$2"
         shift 2
         ;;
-      --alias-name)
-        alias_name="$2"
-        shift 2
-        ;;
       *)
-        echo "Unknown parameter passed to check_kms_key_exists: $1"
+        echo "Unknown parameter passed to restore_pending_kms_key: $1"
         exit 1
         ;;
     esac
   done
 
-  echo "Checking if KMS Key with alias '$alias_name' exists..."
-  aws kms list-aliases \
+  if [[ -z "$key_id" || -z "$endpoint" || -z "$region" ]]; then
+    echo "Missing required parameters for restore_pending_kms_key"
+    exit 1
+  fi
+
+  echo "KMS Key $key_id is in Pending Deletion state. Restoring it..."
+
+  # 삭제 예약 취소
+  aws kms cancel-key-deletion \
+    --key-id "$key_id" \
     --endpoint-url "$endpoint" \
-    --region "$region" \
-    --query "Aliases[?AliasName=='$alias_name'] | length(@)" \
-    --output text | grep -q "1"
+    --region "$region"
 
   if [ $? -eq 0 ]; then
-    echo "KMS Key with alias '$alias_name' already exists."
-    return 0
+    echo "Successfully cancelled key deletion for $key_id\n"
+
+    # 키 활성화
+    aws kms enable-key \
+      --key-id "$key_id" \
+      --endpoint-url "$endpoint" \
+      --region "$region"
+
+    if [ $? -eq 0 ]; then
+      echo "Successfully enabled key $key_id\n"
+    else
+      echo "Failed to enable key $key_id\n"
+    fi
   else
-    echo "KMS Key with alias '$alias_name' does not exist."
-    return 1
+    echo "Failed to cancel key deletion for $key_id\n"
+    exit 1
   fi
 }
 
@@ -60,20 +77,43 @@ create_kms_key() {
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to create_kms_key: $1\n"
+        echo "Unknown parameter passed to create_kms_key: $1"
         exit 1
         ;;
     esac
   done
 
+  if [[ -z "$endpoint" || -z "$region" || -z "$alias_name" || -z "$rotation_days" ]]; then
+    echo "Missing required parameters for create_kms_key"
+    exit 1
+  fi
+
   # 키 존재 여부 확인
-  check_kms_key_exists \
-    --endpoint "$endpoint" \
+  KEY_ID=$(aws kms list-aliases \
+    --endpoint-url "$endpoint" \
     --region "$region" \
-    --alias-name "$alias_name"
-  if [ $? -eq 0 ]; then
-    echo "Skipping KMS Key creation as it already exists.\n"
-    return
+    --query "Aliases[?AliasName=='alias/$alias_name'].TargetKeyId" \
+    --output text)
+
+  if [[ -n "$KEY_ID" && "$KEY_ID" != "None" ]]; then
+    # 키의 상태 확인
+    KEY_STATE=$(aws kms describe-key \
+      --key-id "$KEY_ID" \
+      --endpoint-url "$endpoint" \
+      --region "$region" \
+      --query "KeyMetadata.KeyState" \
+      --output text)
+
+    if [[ "$KEY_STATE" == "PendingDeletion" ]]; then
+      restore_pending_kms_key \
+        --key-id "$KEY_ID" \
+        --endpoint "$endpoint" \
+        --region "$region"
+      return
+    else
+      echo "Skipping KMS Key creation as it already exists: $KEY_ID"
+      return
+    fi
   fi
 
   echo "Creating KMS Key..."
@@ -87,7 +127,7 @@ create_kms_key() {
     --output text)
 
   if [ $? -eq 0 ]; then
-    echo "KMS Key Created: $KEY_ID\n"
+    echo "KMS Key Created: $KEY_ID"
     create_kms_alias \
       --key-id "$KEY_ID" \
       --endpoint "$endpoint" \
@@ -99,7 +139,7 @@ create_kms_key() {
       --region "$region" \
       --rotation-days "$rotation_days"
   else
-    echo "Failed to create KMS Key.\n"
+    echo "Failed to create KMS Key."
     exit 1
   fi
 }
@@ -133,13 +173,13 @@ create_kms_alias() {
 
   echo "Creating Alias for KMS Key...\n"
   aws kms create-alias \
-    --alias-name "$alias_name" \
+    --alias-name "alias/$alias_name" \
     --target-key-id "$key_id" \
     --endpoint-url "$endpoint" \
     --region "$region"
 
   if [ $? -eq 0 ]; then
-    echo "Alias Created: $alias_name\n"
+    echo "Alias Created: alias/$alias_name\n"
   else
     echo "Failed to create Alias.\n"
     exit 1
@@ -269,7 +309,7 @@ create_environment_file_to_resource() {
   KEY_ID=$(aws kms list-aliases \
     --endpoint-url "$endpoint" \
     --region "$region" \
-    --query "Aliases[?AliasName=='${alias_name}'].TargetKeyId" \
+    --query "Aliases[?AliasName=='alias/${alias_name}'].TargetKeyId" \
     --output text)
   ARN="arn:aws:kms:ap-northeast-2:000000000000:key/$KEY_ID"
 
@@ -277,14 +317,75 @@ create_environment_file_to_resource() {
   echo ".env file created with ARN: $ARN\n"
 }
 
+create_branch_key() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --branch_key_id)
+        branch_key_id="$2"
+        shift 2
+        ;;
+      *)
+        echo "Unknown parameter passed to print_arn: $1\n"
+        exit 1
+        ;;
+    esac
+  done
+  echo "Creating branch key..."
+
+  echo "Building the application..."
+  ./gradlew build
+
+  local LOG_FILE="app.log"
+  local PID_FILE="app.pid"
+
+  echo "Starting the application..."
+  nohup java -jar "./build/libs/aws-kms-example-0.0.1-SNAPSHOT.jar" > "$LOG_FILE" 2>&1 &
+  echo $! > "$PID_FILE"
+
+  echo "Waiting for the application to start..."
+  sleep 2
+
+  RESPONSE=$(curl -s -o response.json -w "%{http_code}" -X POST --location "http://localhost:8080/encryption/branch-keys" \
+        -H "Content-Type: application/json" \
+        -d '{
+              "branchKeyId": "'${branch_key_id}'"
+            }')
+
+  if [ "$RESPONSE" -ne 204 ]; then
+    echo "Error: Branch key creation failed with HTTP $RESPONSE"
+    PID=$(cat "$PID_FILE")
+    echo "Stopping the application (PID: $PID)..."
+    kill -9 "$PID"
+    echo "Application stopped."
+    rm -f "$PID_FILE"
+    rm -f "$LOG_FILE"
+    exit 1
+  else
+    echo "Branch key created successfully with ID: $branch_key_id"
+  fi
+
+  if [ -f "$PID_FILE" ]; then
+    PID=$(cat "$PID_FILE")
+    echo "Stopping the application (PID: $PID)..."
+    kill -9 "$PID"
+
+    echo "Application stopped."
+    rm -f "$PID_FILE"
+    rm -f "$LOG_FILE"
+  fi
+
+  echo "Branch key created successfully."
+}
+
 # 메인 함수
 main() {
   local aws_dynamodb_endpoint="http://localhost:4566"
   local aws_kms_endpoint="http://localhost:4574"
   local aws_region="ap-northeast-2"
-  local kms_key_alias="alias/kms-example"
+  local kms_key_alias="kms-example"
   local kms_rotation_days=90
   local keystore_table_name="kms-key-store"
+  local branch_key_id="branch_key_id"
 
   echo "Starting KMS and DynamoDB setup...\n"
 
@@ -303,6 +404,9 @@ main() {
     --endpoint "$aws_kms_endpoint" \
     --region "$aws_region" \
     --alias-name "$kms_key_alias"
+
+  create_branch_key \
+    --branch_key_id "$branch_key_id"
 
   echo "Setup completed successfully."
 }

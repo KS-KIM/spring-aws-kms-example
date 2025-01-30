@@ -10,6 +10,6 @@ class CreateBranchKeyService(
     private val createBranchKeyPort: CreateBranchKeyPort,
 ) : CreateBranchKeyUseCase {
     override fun createBranchKey(command: CreateBranchKeyCommand) {
-        createBranchKeyPort.createBranchKey(command.branchKeyId, command.context)
+        createBranchKeyPort.createBranchKey(command.branchKeyId)
     }
 }
