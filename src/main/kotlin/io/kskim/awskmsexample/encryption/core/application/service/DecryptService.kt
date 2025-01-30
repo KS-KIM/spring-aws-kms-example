@@ -11,7 +11,7 @@ class DecryptService(
     private val decryptPort: DecryptPort,
 ) : DecryptUseCase {
     override fun decrypt(command: DecryptCommand): DecryptResponse {
-        val decryptedData = decryptPort.decrypt(command.data)
+        val decryptedData = decryptPort.decrypt(command.data, command.context)
         return DecryptResponse(decryptedData)
     }
 }

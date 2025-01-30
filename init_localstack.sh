@@ -60,7 +60,7 @@ create_kms_key() {
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to create_kms_key: $1"
+        echo "Unknown parameter passed to create_kms_key: $1\n"
         exit 1
         ;;
     esac
@@ -72,7 +72,7 @@ create_kms_key() {
     --region "$region" \
     --alias-name "$alias_name"
   if [ $? -eq 0 ]; then
-    echo "Skipping KMS Key creation as it already exists."
+    echo "Skipping KMS Key creation as it already exists.\n"
     return
   fi
 
@@ -87,7 +87,7 @@ create_kms_key() {
     --output text)
 
   if [ $? -eq 0 ]; then
-    echo "KMS Key Created: $KEY_ID"
+    echo "KMS Key Created: $KEY_ID\n"
     create_kms_alias \
       --key-id "$KEY_ID" \
       --endpoint "$endpoint" \
@@ -99,7 +99,7 @@ create_kms_key() {
       --region "$region" \
       --rotation-days "$rotation_days"
   else
-    echo "Failed to create KMS Key."
+    echo "Failed to create KMS Key.\n"
     exit 1
   fi
 }
@@ -125,13 +125,13 @@ create_kms_alias() {
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to create_kms_alias: $1"
+        echo "Unknown parameter passed to create_kms_alias: $1\n"
         exit 1
         ;;
     esac
   done
 
-  echo "Creating Alias for KMS Key..."
+  echo "Creating Alias for KMS Key...\n"
   aws kms create-alias \
     --alias-name "$alias_name" \
     --target-key-id "$key_id" \
@@ -139,9 +139,9 @@ create_kms_alias() {
     --region "$region"
 
   if [ $? -eq 0 ]; then
-    echo "Alias Created: $alias_name"
+    echo "Alias Created: $alias_name\n"
   else
-    echo "Failed to create Alias."
+    echo "Failed to create Alias.\n"
     exit 1
   fi
 }
@@ -167,7 +167,7 @@ enable_key_rotation() {
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to enable_key_rotation: $1"
+        echo "Unknown parameter passed to enable_key_rotation: $1\n"
         exit 1
         ;;
     esac
@@ -181,9 +181,9 @@ enable_key_rotation() {
 
   if [ $? -eq 0 ]; then
     echo "Key Rotation Enabled for Key ID: $key_id"
-    echo "Rotation interval of $rotation_days days set (manual simulation may be required)."
+    echo "Rotation interval of $rotation_days days set (manual simulation may be required).\n"
   else
-    echo "Failed to enable Key Rotation."
+    echo "Failed to enable Key Rotation.\n"
     exit 1
   fi
 }
@@ -205,7 +205,7 @@ create_dynamodb_table() {
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to create_dynamodb_table: $1"
+        echo "Unknown parameter passed to create_dynamodb_table: $1\n"
         exit 1
         ;;
     esac
@@ -218,7 +218,7 @@ create_dynamodb_table() {
     --table-name "$table_name" &>/dev/null
 
   if [ $? -eq 0 ]; then
-    echo "Table '$table_name' already exists. Skipping creation."
+    echo "Table '$table_name' already exists. Skipping creation.\n"
     return
   fi
 
@@ -237,105 +237,44 @@ create_dynamodb_table() {
 
 
   if [ $? -eq 0 ]; then
-    echo "Table '$table_name' created successfully."
+    echo "Table '$table_name' created successfully.\n"
   else
-    echo "Failed to create table '$table_name'."
+    echo "Failed to create table '$table_name'.\n"
     exit 1
   fi
 }
 
-# 브랜치 키 생성 및 저장 함수
-create_active_branch_key() {
-  local dynamodb_endpoint=""
-  local kms_endpoint=""
-  local region=""
-  local table_name=""
-  local kms_arn=""
-  local logical_key_store_name=""
-  local branch_key_id=""
-
-  # 전달된 인자를 파싱
+create_environment_file_to_resource() {
   while [[ $# -gt 0 ]]; do
     case $1 in
-      --dynamodb_endpoint)
-        dynamodb_endpoint="$2"
-        shift 2
-        ;;
-      --kms_endpoint)
-        kms_endpoint="$2"
+      --endpoint)
+        endpoint="$2"
         shift 2
         ;;
       --region)
         region="$2"
         shift 2
         ;;
-      --table-name)
-        table_name="$2"
-        shift 2
-        ;;
-      --kms-arn)
-        kms_arn="$2"
-        shift 2
-        ;;
-      --logical-key-store-name)
-        logical_key_store_name="$2"
-        shift 2
-        ;;
-      --branch-key-id)
-        branch_key_id="$2"
+      --alias-name)
+        alias_name="$2"
         shift 2
         ;;
       *)
-        echo "Unknown parameter passed to create_active_branch_key: $1"
+        echo "Unknown parameter passed to print_arn: $1\n"
         exit 1
         ;;
     esac
   done
 
-  # 브랜치 키 ID 생성 (UUID v4)
-  if [[ -z "$branch_key_id" ]]; then
-    branch_key_id=$(uuidgen)
-    echo "Generated branch key ID: $branch_key_id"
-  fi
-
-  # 타임스탬프 생성 (ISO 8601 형식)
-  local timestamp
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  echo "Generated timestamp: $timestamp"
-
-  # KMS Data Key 생성
-  local data_key
-  data_key=$(aws kms generate-data-key-without-plaintext \
-    --endpoint-url "$kms_endpoint" \
+  KEY_ID=$(aws kms list-aliases \
+    --endpoint-url "$endpoint" \
     --region "$region" \
-    --key-id "$kms_arn" \
-    --encryption-context "branch-key-id=$branch_key_id,type=branch:ACTIVE,create-time=$timestamp,logical-key-store-name=$logical_key_store_name,kms-arn=$kms_arn,hierarchy-version=1" \
-    --number-of-bytes 32 \
-    --query CiphertextBlob \
+    --query "Aliases[?AliasName=='${alias_name}'].TargetKeyId" \
     --output text)
-  echo "Generated encrypted data key."
+  ARN="arn:aws:kms:ap-northeast-2:000000000000:key/$KEY_ID"
 
-  # DynamoDB에 브랜치 키 저장
-  aws dynamodb put-item \
-    --endpoint-url "$dynamodb_endpoint" \
-    --region "$region" \
-    --table-name "$table_name" \
-    --item "{
-      \"branch-key-id\": {\"S\": \"$branch_key_id\"},
-      \"type\": {\"S\": \"branch:ACTIVE\"},
-      \"enc\": {\"S\": \"$data_key\"},
-      \"version\": {\"S\": \"branch:version:$(uuidgen)\"},
-      \"create-time\": {\"S\": \"$timestamp\"},
-      \"kms-arn\": {\"S\": \"$kms_arn\"},
-      \"hierarchy-version\": {\"S\": \"1\"}
-    }"
-
-  if [ $? -eq 0 ]; then
-    echo "Successfully stored active branch key in DynamoDB with ID '$branch_key_id'."
-  else
-    echo "Failed to store active branch key in DynamoDB."
-    exit 1
-  fi
+  echo "KMS_ARN=$ARN" > .env
+  echo ".env file created with ARN: $ARN\n"
 }
 
 # 메인 함수
@@ -343,13 +282,11 @@ main() {
   local aws_dynamodb_endpoint="http://localhost:4566"
   local aws_kms_endpoint="http://localhost:4574"
   local aws_region="ap-northeast-2"
-  local kms_arn="arn:aws:kms:ap-northeast-2:000000000000:alias/kms-example"
   local kms_key_alias="alias/kms-example"
   local kms_rotation_days=90
   local keystore_table_name="kms-key-store"
-  local branch_key_id="test-branch-key-id"
 
-  echo "Starting KMS and DynamoDB setup..."
+  echo "Starting KMS and DynamoDB setup...\n"
 
   create_kms_key \
     --endpoint "$aws_kms_endpoint" \
@@ -362,14 +299,10 @@ main() {
     --region "$aws_region" \
     --table-name "$keystore_table_name"
 
-  create_active_branch_key \
-    --dynamodb_endpoint "$aws_dynamodb_endpoint" \
-    --kms_endpoint "$aws_kms_endpoint" \
+  create_environment_file_to_resource \
+    --endpoint "$aws_kms_endpoint" \
     --region "$aws_region" \
-    --kms-arn "$kms_arn" \
-    --table-name "$keystore_table_name" \
-    --logical-key-store-name "$keystore_table_name" \
-    --branch-key-id "$branch_key_id"
+    --alias-name "$kms_key_alias"
 
   echo "Setup completed successfully."
 }
